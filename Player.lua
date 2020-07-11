@@ -12,7 +12,7 @@ function Player:init(map)
     
     self.x = 0
     self.y = 0
-    self.width = 16
+    self.width = 15
     self.height = 20
 
     -- offset from top left to center to support sprite flipping
@@ -21,7 +21,7 @@ function Player:init(map)
 
     -- reference to map for checking tiles
     self.map = map
-    self.texture = love.graphics.newImage('graphics/blue_alien.png')
+    self.texture = love.graphics.newImage('graphics/knight.png')
 
     -- sound effects
     self.sounds = {
@@ -48,7 +48,7 @@ function Player:init(map)
     self.dy = 0
 
     -- position on top of  tiles
-    self.y = map.tileHeight * ((map.mapHeight - 2) / 2) - self.height
+    self.y = map.tileHeight * (map.mapHeight - 1) - self.height
     self.x = map.tileWidth * 10
 
     -- initialize all player animations
@@ -56,25 +56,27 @@ function Player:init(map)
         ['idle'] = Animation({
             texture = self.texture,
             frames = {
-                love.graphics.newQuad(0, 0, 16, 20, self.texture:getDimensions())
+                love.graphics.newQuad(0, 8, 15, 20, self.texture:getDimensions())
             }
         }),
         ['walking'] = Animation({
             texture = self.texture,
             frames = {
-                love.graphics.newQuad(128, 0, 16, 20, self.texture:getDimensions()),
-                love.graphics.newQuad(144, 0, 16, 20, self.texture:getDimensions()),
-                love.graphics.newQuad(160, 0, 16, 20, self.texture:getDimensions()),
-                love.graphics.newQuad(144, 0, 16, 20, self.texture:getDimensions()),
+                love.graphics.newQuad(16, 8, 15, 20, self.texture:getDimensions()),
+                love.graphics.newQuad(32, 8, 15, 20, self.texture:getDimensions()),
+                love.graphics.newQuad(48, 8, 15, 20, self.texture:getDimensions()),
+                
             },
             interval = 0.15
         }),
         ['jumping'] = Animation({
             texture = self.texture,
             frames = {
-                love.graphics.newQuad(32, 0, 16, 20, self.texture:getDimensions())
+                love.graphics.newQuad(80, 4, 15, 20, self.texture:getDimensions())
             }
+
         })
+        -- falling sate with last sprite of knight
     }
 
     -- initialize animation and current frame we should render
@@ -143,9 +145,7 @@ function Player:init(map)
         end,
         ['jumping'] = function(dt)
             -- break if we go below the surface
-            if self.y > 300 then
-                return
-            end
+            
             
             if love.keyboard.isDown('left') then
                 self.direction = 'left'
@@ -197,34 +197,12 @@ function Player:calculateJumps()
     -- if we have negative y velocity (jumping), check if we collide
     -- with any blocks above us
     if self.dy < 0 then
-        if self.map:tileAt(self.x, self.y).id ~= TILE_EMPTY or
-            self.map:tileAt(self.x + self.width - 1, self.y).id ~= TILE_EMPTY then
+        if self.map:tileAt(self.x, self.y).id ~= TILE_WALL or
+            self.map:tileAt(self.x + self.width - 1, self.y).id ~= TILE_WALL then
             -- reset y velocity
             self.dy = 0
 
-            -- change block to different block
-            local playCoin = false
-            local playHit = false
-            if self.map:tileAt(self.x, self.y).id == JUMP_BLOCK then
-                self.map:setTile(math.floor(self.x / self.map.tileWidth) + 1,
-                    math.floor(self.y / self.map.tileHeight) + 1, JUMP_BLOCK_HIT)
-                playCoin = true
-            else
-                playHit = true
-            end
-            if self.map:tileAt(self.x + self.width - 1, self.y).id == JUMP_BLOCK then
-                self.map:setTile(math.floor((self.x + self.width - 1) / self.map.tileWidth) + 1,
-                    math.floor(self.y / self.map.tileHeight) + 1, JUMP_BLOCK_HIT)
-                playCoin = true
-            else
-                playHit = true
-            end
-
-            if playCoin then
-                self.sounds['coin']:play()
-            elseif playHit then
-                self.sounds['hit']:play()
-            end
+            
         end
     end
 end
