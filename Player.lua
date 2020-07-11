@@ -7,6 +7,7 @@ Player = Class{}
 local WALKING_SPEED = 140
 local JUMP_VELOCITY = 400
 
+
 function Player:init(map)
     
     self.x = 0
@@ -46,7 +47,7 @@ function Player:init(map)
     self.dx = 0
     self.dy = 0
 
-    -- position on top of map tiles
+    -- position on top of  tiles
     self.y = map.tileHeight * ((map.mapHeight - 2) / 2) - self.height
     self.x = map.tileWidth * 10
 
@@ -145,7 +146,7 @@ function Player:init(map)
             if self.y > 300 then
                 return
             end
-
+            
             if love.keyboard.isDown('left') then
                 self.direction = 'left'
                 self.dx = -WALKING_SPEED
@@ -180,15 +181,14 @@ function Player:update(dt)
     self.animation:update(dt)
     self.currentFrame = self.animation:getCurrentFrame()
     self.x = self.x + self.dx * dt
-    love.graphics.printf('Victory!', 0, 20, map.mapWidth, 'center')
-    if self.x > map.mapWidth then
-        gameState = 'done'
-    end    
-
+    playerx = self.x + map.tileWidth * 2
+    
     self:calculateJumps()
 
     -- apply velocity
     self.y = self.y + self.dy * dt
+    playery = self.y
+
 end
 
 -- jumping and block hitting logic
@@ -266,9 +266,8 @@ function Player:render()
         scaleX = 1
     else
         scaleX = -1
-    end
-    love.graphics.printf('Victory!', 0, 20, mnself.x * self.width, 'center')
-    -- draw sprite with scale factor and offsets
+    end 
+    
     love.graphics.draw(self.texture, self.currentFrame, math.floor(self.x + self.xOffset),
         math.floor(self.y + self.yOffset), 0, scaleX, 1, self.xOffset, self.yOffset)
 end

@@ -12,6 +12,7 @@ push = require 'push'
 require 'Animation'
 require 'Map'
 require 'Player'
+require 'Flag'
 
 -- close resolution to NES but 16:9
 VIRTUAL_WIDTH = 432
@@ -49,7 +50,7 @@ function love.load()
     love.keyboard.keysPressed = {}
     love.keyboard.keysReleased = {}
 
-    gameState = 'Play'
+    
       
     
 end
@@ -90,15 +91,9 @@ end
 function love.keyreleased(key)
     love.keyboard.keysReleased[key] = true
 end
-
 -- called every frame, with dt passed in as delta in time since last frame
 function love.update(dt)
     
-    if gameState == 'done' then
-        --love.graphics.setFont(largeFont)
-        love.graphics.printf('Victory!', 0, 20, map.mapWidth * map.tileWidth * 2 - 80, 'center')
-
-    end
     map:update(dt)
 
     -- reset all keys pressed and released this frame
@@ -120,12 +115,6 @@ function love.draw()
     -- renders our map object onto the screen
     love.graphics.translate(math.floor(-map.camX + 0.5), math.floor(-map.camY + 0.5))
     map:render()
-
-    if gameState == 'done' then
-        --love.graphics.setFont(largeFont)
-        
-
-    end
 
     -- end virtual resolution
     push:apply('end')

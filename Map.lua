@@ -31,11 +31,6 @@ POST_TOP = 8
 POST_MIDDLE = 12
 POST_BOTTOM = 16
 
---flag
-FLAG_1 = 13
-FLAG_2 = 14
-FLAG_3 = 15
-
 -- a speed to multiply delta time to scroll map; smooth value
 local SCROLL_SPEED = 62
 
@@ -55,8 +50,12 @@ function Map:init()
     -- applies positive Y influence on anything affected
     self.gravity = 15
 
+
     -- associate player with map
     self.player = Player(self)
+    self.flagpole = Flagpole(self)
+
+
 
     -- camera offsets
     self.camX = 0
@@ -103,13 +102,7 @@ function Map:init()
             self:setTile(x, tileLevel + 2, POST_BOTTOM)
             for y = self.mapHeight / 2, self.mapHeight do
                 self:setTile(x, y, TILE_BRICK)
-            end    
-
-        elseif x == self.mapWidth - 2 then
-            tileLevel = self.mapHeight / 2 - 3
-            for y = self.mapHeight / 2, self.mapHeight do
-                self:setTile(x, tileLevel, FLAG_1)
-            end                           
+            end                         
         end
         
         -- 2% chance to generate a cloud
@@ -126,7 +119,7 @@ function Map:init()
         end
 
         -- 5% chance to generate a mushroom
-        if math.random(20) == 1 then
+        if math.random(20) == 1 and x < self.mapWidth - 11 then
             -- left side of pipe
             self:setTile(x, self.mapHeight / 2 - 2, MUSHROOM_TOP)
             self:setTile(x, self.mapHeight / 2 - 1, MUSHROOM_BOTTOM)
@@ -140,7 +133,7 @@ function Map:init()
             x = x + 1
 
         -- 10% chance to generate bush, being sure to generate away from edge
-        elseif math.random(10) == 1 and x < self.mapWidth - 3 then
+        elseif math.random(10) == 1 and x < self.mapWidth - 11 then
             local bushLevel = self.mapHeight / 2 - 1
 
             -- place bush component and then column of bricks
@@ -165,7 +158,7 @@ function Map:init()
             end
 
             -- chance to create a block for Mario to hit
-            if math.random(15) == 1 then
+            if math.random(15) == 1 and x < self.mapWidth - 11  then
                 self:setTile(x, self.mapHeight / 2 - 4, JUMP_BLOCK)
             end
 
@@ -175,7 +168,18 @@ function Map:init()
             if x < self.mapWidth - 11 then
             -- increment X so we skip two scanlines, creating a 2-tile gap
             x = x + 2
+            else 
+                for y = self.mapHeight / 2, self.mapHeight do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+                x = x + 1
             end
+        end
+    end
+
+    if x == self.mapWidth then
+        for y = 0, self.mapHeight do
+            self:setTile(x, y, TILE_BRICK)
         end
     end
 
@@ -205,6 +209,7 @@ end
 -- function to update camera offset with delta time
 function Map:update(dt)
     self.player:update(dt)
+    self.flagpole:update(dt)
     
     -- keep camera's X coordinate following the player, preventing camera from
     -- scrolling past 0 to the left and the map's width
@@ -242,6 +247,6 @@ function Map:render()
             end
         end
     end
-    --love.graphics.printf('Victory!', 0, 20, self.tileWidth * self.mapWidth * 2 - 80 , 'center')
     self.player:render()
+    self.flagpole:render()
 end
