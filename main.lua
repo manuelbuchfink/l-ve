@@ -10,9 +10,16 @@ Class = require 'class'
 push = require 'push'
 
 require 'Animation'
+
 require 'Map'
 require 'Player'
-require 'Flag'
+require 'Creep'
+require 'Creepr1'
+require 'Creepr2'
+require 'Creepr3'
+require 'Creepr4'
+require 'Slime'
+
 
 -- close resolution to NES but 16:9
 VIRTUAL_WIDTH = 432
@@ -23,7 +30,7 @@ WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
 
 -- seed RNG
-math.randomseed(os.time())
+math.randomseed(os.time()) 
 
 -- makes upscaling look pixel-y instead of blurry
 love.graphics.setDefaultFilter('nearest', 'nearest')
@@ -45,7 +52,7 @@ function love.load()
         resizable = true
     })
 
-    love.window.setTitle('Super Mario 50')
+    love.window.setTitle('Dungeon Tower')
 
     love.keyboard.keysPressed = {}
     love.keyboard.keysReleased = {}
@@ -107,14 +114,13 @@ end
 -- called each frame, used to render to the screen
 function love.draw()
     -- begin virtual resolution drawing
-    push:apply('start')
-
-    -- clear screen using Mario background blue
-    love.graphics.clear(108/255, 140/255, 255/255, 255/255)
+    push:apply('start')   
 
     -- renders our map object onto the screen
     love.graphics.translate(math.floor(-map.camX + 0.5), math.floor(-map.camY + 0.5))
+    
     map:render()
+    
 
     -- end virtual resolution
     push:apply('end')

@@ -7,29 +7,11 @@ require 'Util'
 
 Map = Class{}
 
-TILE_BRICK = 1
-TILE_EMPTY = -1
+TILE_BRICK = 36
+TILE_EMPTY = 1
 
--- cloud tiles
-CLOUD_LEFT = 6
-CLOUD_RIGHT = 7
-
--- bush tiles
-BUSH_LEFT = 2
-BUSH_RIGHT = 3
-
--- mushroom tiles
-MUSHROOM_TOP = 10
-MUSHROOM_BOTTOM = 11
-
--- jump block
-JUMP_BLOCK = 5
-JUMP_BLOCK_HIT = 9
-
---pole
-POST_TOP = 8
-POST_MIDDLE = 12
-POST_BOTTOM = 16
+TILE_WALL = 130
+TILE_WALL_CRACK = 131
 
 -- a speed to multiply delta time to scroll map; smooth value
 local SCROLL_SPEED = 62
@@ -37,29 +19,43 @@ local SCROLL_SPEED = 62
 -- constructor for our map object
 function Map:init()
 
-    self.spritesheet = love.graphics.newImage('graphics/spritesheet.png')
+    self.spritesheet = love.graphics.newImage('graphics/spritesheet.png')   
     self.sprites = generateQuads(self.spritesheet, 16, 16)
+    
+    self.background = love.graphics.newImage('graphics/floor.png')      
+    self.wall = generateQuads(self.background, 32, 48)
+
     self.music = love.audio.newSource('sounds/music.wav', 'static')
+
+    --local walls = {}
+    
+   -- table.insert(walls.quads, love.graphics.newQuad(0, 0, 48, 32, walls:getDimensions()))
 
     self.tileWidth = 16
     self.tileHeight = 16
-    self.mapWidth = 50
-    self.mapHeight = 28
+    self.mapWidth = 27
+    self.mapHeight = 100
     self.tiles = {}
 
     -- applies positive Y influence on anything affected
-    self.gravity = 15
+    self.gravity = 20
 
 
     -- associate player with map
     self.player = Player(self)
-    self.flagpole = Flagpole(self)
+    self.creep = Creep(self)
+    self.creepr1 = Creepr1(self)
+    self.creepr2 = Creepr2(self)
+    self.creepr3 = Creepr3(self)
+    self.creepr4 = Creepr4(self)
+    self.slime = Slime(self)
+    
 
 
 
     -- camera offsets
     self.camX = 0
-    self.camY = -3
+    self.camY = 0
 
     -- cache width and height of map in pixels
     self.mapWidthPixels = self.mapWidth * self.tileWidth
@@ -70,7 +66,7 @@ function Map:init()
         for x = 1, self.mapWidth do
             
             -- support for multiple sheets per tile; storing tiles as tables 
-            self:setTile(x, y, TILE_EMPTY)
+            self:setTile(x, y, 1)
             
         end
     end
@@ -79,109 +75,180 @@ function Map:init()
 
     -- begin generating the terrain using vertical scan lines
     local x = 1
-    while x < self.mapWidth do
+    local y = 1
+    while x <= self.mapWidth do
 
-         --make pyramid
-        if x == self.mapWidth - 10 then
-            local tileLevel
-            
-           
-            for i = 1, 5 do
-                tileLevel = self.mapHeight / 2 - i
-                self:setTile(x, tileLevel, TILE_BRICK)
-                for y = self.mapHeight / 2 - i, self.mapHeight do
-                    self:setTile(x, y, TILE_BRICK)
-                end                    
-                x = x + 1
-            end
 
-        elseif x == self.mapWidth - 3 then
-            tileLevel = self.mapHeight / 2 - 3
-            self:setTile(x, tileLevel, POST_TOP)
-            self:setTile(x, tileLevel + 1, POST_MIDDLE)
-            self:setTile(x, tileLevel + 2, POST_BOTTOM)
-            for y = self.mapHeight / 2, self.mapHeight do
+        --create left wall
+        if x == 1 then
+            for y = 0, self.mapHeight do
                 self:setTile(x, y, TILE_BRICK)
-            end                         
-        end
+            end
         
-        -- 2% chance to generate a cloud
-        -- make sure we're 2 tiles from edge at least
-        if x < self.mapWidth - 2 then
-            if math.random(20) == 1 then
-                
-                -- choose a random vertical spot above where blocks/pipes generate
-                local cloudStart = math.random(self.mapHeight / 2 - 6)
+        
+        --create right wall
+        elseif x == self.mapWidth  then
+            for y = 0, self.mapHeight do
+                self:setTile(x, y, TILE_BRICK)
+            end
+        end     
+         x = x + 1          
+    
+    end
 
-                self:setTile(x, cloudStart, CLOUD_LEFT)
-                self:setTile(x + 1, cloudStart, CLOUD_RIGHT)
+    
+    while y <= self.mapHeight do
+        local h = 4
+         --create ceiling
+        if y == 1 then
+            for x= 0, self.mapWidth do
+                self:setTile(x,y, TILE_BRICK)
+            end
+           
+
+        --create floor
+        elseif y == self.mapHeight then
+            for x = 0, self.mapWidth do
+                self:setTile(x, y, TILE_BRICK)
             end
         end
 
-        -- 5% chance to generate a mushroom
-        if math.random(20) == 1 and x < self.mapWidth - 11 then
-            -- left side of pipe
-            self:setTile(x, self.mapHeight / 2 - 2, MUSHROOM_TOP)
-            self:setTile(x, self.mapHeight / 2 - 1, MUSHROOM_BOTTOM)
-
-            -- creates column of tiles going to bottom of map
-            for y = self.mapHeight / 2, self.mapHeight do
-                self:setTile(x, y, TILE_BRICK)
-            end
-
-            -- next vertical scan line
-            x = x + 1
-
-        -- 10% chance to generate bush, being sure to generate away from edge
-        elseif math.random(10) == 1 and x < self.mapWidth - 11 then
-            local bushLevel = self.mapHeight / 2 - 1
-
-            -- place bush component and then column of bricks
-            self:setTile(x, bushLevel, BUSH_LEFT)
-            for y = self.mapHeight / 2, self.mapHeight do
-                self:setTile(x, y, TILE_BRICK)
-            end
-            x = x + 1
-
-            self:setTile(x, bushLevel, BUSH_RIGHT)
-            for y = self.mapHeight / 2, self.mapHeight do
-                self:setTile(x, y, TILE_BRICK)
-            end
-            x = x + 1
-
-        -- 10% chance to not generate anything, creating a gap
-        elseif math.random(10) ~= 1 then
-            
-            -- creates column of tiles going to bottom of map
-            for y = self.mapHeight / 2, self.mapHeight do
-                self:setTile(x, y, TILE_BRICK)
-            end
-
-            -- chance to create a block for Mario to hit
-            if math.random(15) == 1 and x < self.mapWidth - 11  then
-                self:setTile(x, self.mapHeight / 2 - 4, JUMP_BLOCK)
-            end
-
-            -- next vertical scan line
-            x = x + 1
-        else
-            if x < self.mapWidth - 11 then
-            -- increment X so we skip two scanlines, creating a 2-tile gap
-            x = x + 2
-            else 
-                for y = self.mapHeight / 2, self.mapHeight do
+            if y == self.mapHeight - 4 then
+                for x = 0, self.mapWidth - 3 do
                     self:setTile(x, y, TILE_BRICK)
                 end
-                x = x + 1
-            end
-        end
-    end
+            
 
-    if x == self.mapWidth then
-        for y = 0, self.mapHeight do
-            self:setTile(x, y, TILE_BRICK)
-        end
+            elseif y == self.mapHeight - 8 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+            
+
+            elseif y == self.mapHeight - 12 then
+                for x = 0, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+                for x = self.mapWidth - 14, self.mapWidth - 11 do
+                    self:setTile(x, y, TILE_EMPTY)
+                end       
+            
+
+            elseif y == self.mapHeight - 16 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 20 then
+                for x = 0, self.mapWidth - 3 do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 24 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 28 then
+                for x = 0, self.mapWidth - 3 do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+                for x = self.mapWidth - 14, self.mapWidth - 11 do
+                    self:setTile(x, y, TILE_EMPTY)
+                end
+
+            elseif y == self.mapHeight - 32 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 36 then
+                for x = 0, self.mapWidth - 3 do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 40 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 44 then
+                for x = 0, self.mapWidth - 3 do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 48 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 52 then
+                for x = 0, self.mapWidth - 3 do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+                for x = self.mapWidth - 14, self.mapWidth - 11 do
+                    self:setTile(x, y, TILE_EMPTY)
+                end
+
+            elseif y == self.mapHeight - 56 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 60 then
+                for x = 0, self.mapWidth - 3 do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 64 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 68 then
+                for x = 0, self.mapWidth - 3 do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 72 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+                for x = self.mapWidth - 14, self.mapWidth - 11 do
+                    self:setTile(x, y, TILE_EMPTY)
+                end
+
+            elseif y == self.mapHeight - 76 then
+                for x = 0, self.mapWidth - 3 do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 80 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 84 then
+                for x = 0, self.mapWidth - 3 do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 88 then
+                for x = 4, self.mapWidth do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            elseif y == self.mapHeight - 92 then
+                for x = 0, self.mapWidth - 3 do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+            
+            end        
+        y = y + 1 
+
     end
+    
 
     -- start the background music
     self.music:setLooping(true)
@@ -192,8 +259,7 @@ end
 function Map:collides(tile)
     -- define our collidable tiles
     local collidables = {
-        TILE_BRICK, JUMP_BLOCK, JUMP_BLOCK_HIT,
-        MUSHROOM_TOP, MUSHROOM_BOTTOM
+        TILE_BRICK
     }
 
     -- iterate and return true if our tile type matches
@@ -209,12 +275,25 @@ end
 -- function to update camera offset with delta time
 function Map:update(dt)
     self.player:update(dt)
-    self.flagpole:update(dt)
+    self.creep:update(dt)
+    self.creepr1:update(dt)
+    self.creepr2:update(dt)
+    self.creepr3:update(dt)
+    self.creepr4:update(dt)
+    self.slime:update(dt)
+    
     
     -- keep camera's X coordinate following the player, preventing camera from
     -- scrolling past 0 to the left and the map's width
     self.camX = math.max(0, math.min(self.player.x - VIRTUAL_WIDTH / 2,
         math.min(self.mapWidthPixels - VIRTUAL_WIDTH, self.player.x)))
+
+    self.camY = self.player.y - VIRTUAL_HEIGHT  + self.player.height + self.tileHeight
+    --if self.player.y < self.mapHeight - 4 then
+       -- self.camY = self.player.y - VIRTUAL_HEIGHT  + self.player.height + self.tileHeight
+    
+        
+    --end
 end
 
 -- gets the tile type at a given pixel coordinate
@@ -240,13 +319,34 @@ end
 function Map:render()
     for y = 1, self.mapHeight do
         for x = 1, self.mapWidth do
-            local tile = self:getTile(x, y)
-            if tile ~= TILE_EMPTY then
-                love.graphics.draw(self.spritesheet, self.sprites[tile],
-                    (x - 1) * self.tileWidth, (y - 1) * self.tileHeight)
-            end
+            
+    
+            love.graphics.draw(self.background, math.floor((x - 3) * 48), 
+                math.floor((y - 3) * 32))            
         end
     end
+    for y = 1, self.mapHeight do
+        for x = 1, self.mapWidth do
+            local tile = self:getTile(x, y)
+            if tile ~= TILE_WALL or tile ~= TILE_WALL_CRACK then
+                love.graphics.draw(self.spritesheet, self.sprites[tile],
+                    (x - 1) * self.tileWidth, (y - 1) * self.tileHeight)            
+
+            else
+                love.graphics.draw(self.wall, self.background[tile],
+                    (x - 1) * self.tileWidth, (y - 1) * self.tileHeight)
+            
+            end       
+        end
+    end
+    
+   
     self.player:render()
-    self.flagpole:render()
+    self.creep:render()
+    self.creepr1:render()
+    self.creepr2:render()
+    self.creepr3:render()
+    self.creepr4:render()
+    self.slime:render()
+    
 end
