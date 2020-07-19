@@ -44,9 +44,12 @@ function Creepr1:init(map)
     self.dy = 0
 
     -- position on top of  tiles
-    self.y = map.tileHeight * (map.mapHeight - 22) - self.height
+    self.y = map.tileHeight * (map.mapHeight - 1) - self.height
     self.x = map.tileWidth * 2
 
+
+    wait = true
+    timer = 0
     -- initialize all player animations
     self.animations = {
         ['idle'] = Animation({
@@ -73,8 +76,9 @@ function Creepr1:init(map)
         ['idle'] = function(dt)
             
             -- add spacebar functionality to trigger jump state
-            if self.dy == 0 then
+            if self.dy == 0 and wait == false then
                 self.dy = -JUMP_VELOCITY
+                wait = true
                 self.state = 'jumping'
                 self.animation = self.animations['jumping']
                 --self.sounds['jump']:play()
@@ -119,6 +123,14 @@ function Creepr1:init(map)
 end
 
 function Creepr1:update(dt)
+
+    --jump timer
+    timer = timer + dt
+
+    if timer > 1 then
+        wait = false
+        timer = 0        
+    end
     self.behaviors[self.state](dt)
     self.animation:update(dt)
     self.currentFrame = self.animation:getCurrentFrame()

@@ -1,71 +1,85 @@
+Flag = Class{}
 
-Flagpole = Class{}
 
-local VICTORY_SPEED = 50
+Flag = Class{}
 
-function Flagpole:init(map)
-    
-    
-   -- self.map = Map(self)
+local WALKING_SPEED = 30
+
+function Flag:init(map)    
+  
     self.map = map
     self.sounds = {
-        ['victory'] = love.audio.newSource('sounds/victory.wav', 'static')
+        ['victory'] = love.audio.newSource('sounds/kill.wav', 'static')
     }    
-   -- self.x = map.mapWidthPixels - map.tileWidth * 3.25
+   
     self.y = 0
-    self.dy = VICTORY_SPEED
-    self.y = 160
+    self.x = 308
+    self.dx = WALKING_SPEED
   
-   animation = newAnimation(love.graphics.newImage("graphics/spritesheet.png"),16,16,0.25)  
-   victoryfont = love.graphics.newFont('fonts/font.ttf', 16)
+    self.height = 14
+    self.y = map.tileHeight * (map.mapHeight - 30) - self.height
+
+    self.xOffset = 4
+    self.yOffset = 4
+    flagx = self.x
+    flagy = self.y
    
+  
+   flagimation =  flagAnimation(love.graphics.newImage("graphics/flag.png"),16,16,0.75)
+  
+     
    
 end
 
-function newAnimation(image, width, height, duration)
+ function flagAnimation(image, width, height, duration)
 
-    local animation = {}
-    animation.spriteSheet = image;
-    animation.quads = {};
+    local flagimation = {}
+    flagimation.spriteSheet = image;
+    flagimation.quads = {};
+    if playerx == flagx and playery == flagy then 
+        table.insert(flagimation.quads, love.graphics.newQuad(0, 16, 16, 16, image:getDimensions()))
+    else         
+        table.insert(flagimation.quads, love.graphics.newQuad(0 , 0, 16, 16, image:getDimensions()))
+    end
 
-    table.insert(animation.quads, love.graphics.newQuad(0, 48, 16, 16, image:getDimensions()))
-    table.insert(animation.quads, love.graphics.newQuad(16, 48, 16, 16, image:getDimensions()))
-    table.insert(animation.quads, love.graphics.newQuad(32, 48, 16, 16, image:getDimensions()))
-    
-
-    animation.duration = duration or 1
-    animation.currentTime = 0
+    flagimation.duration = duration or 1
+    flagimation.currentTime = 0
  
-    return animation
+    return flagimation
 end
 
 
-function Flagpole:update(dt)
+function Flag:update(dt)
 
-    animation.currentTime = animation.currentTime + dt
-    if animation.currentTime >= animation.duration then
-        animation.currentTime = animation.currentTime - animation.duration
+    flagimation.currentTime = flagimation.currentTime + dt
+    if flagimation.currentTime >= flagimation.duration then
+        flagimation.currentTime = flagimation.currentTime - flagimation.duration
     end    
-    
-    if playerx >= map.mapWidthPixels - map.tileWidth * 3.25 and playery >= map.mapHeightPixels / 2 - map.tileHeight * 3 then
-        gamestate = 'Victory'        
+    if self.x >= 400 then
+        self.dx = -WALKING_SPEED
+    elseif self.x <= 16 then
+
+        self.dx = WALKING_SPEED
     end
 
-    if gamestate == 'Victory' then
-        if self.y < map.mapHeightPixels / 2 - map.tileHeight * 2 then
-            self.y = self.y + self.dy *dt
-        end        
-    end
+    
+    
 end
 
-function Flagpole:render()
-    
-    if gamestate == 'Victory' then
-        love.graphics.setFont(victoryfont)
-        love.graphics.printf('Victory!', map.mapWidthPixels - map.tileWidth * 17 , 20, 100, 'center')
+function Flag:render()
+    if self.dx > 0 then
+        scaleX = 1
+    elseif self.dx < 0 then
+        scaleX = -1
     end
+   
+    
+    local spriteNum = math.floor(flagimation.currentTime / flagimation.duration * #flagimation.quads) + 1
+    
+    love.graphics.draw(flagimation.spriteSheet, flagimation.quads[spriteNum], math.floor(self.x), 
+        math.floor(self.y) , 0, scaleX, 1, self.xOffset, self.yOffset)
 
-    local spriteNum = math.floor(animation.currentTime / animation.duration * #animation.quads) + 1
-    love.graphics.draw(animation.spriteSheet, animation.quads[spriteNum], map.mapWidthPixels - map.tileWidth * 3.25, self.y , 0, 1)
+
+    
 
 end

@@ -265,6 +265,9 @@ function Player:update(dt)
     -- apply velocity
     self.y = self.y + self.dy * dt
 
+    playerx = self.x
+    playery = self.y
+
 end
 
 -- jumping and block hitting logic

@@ -34,7 +34,7 @@ function Map:init()
     self.tileWidth = 16
     self.tileHeight = 16
     self.mapWidth = 27
-    self.mapHeight = 100
+    self.mapHeight = 110
     self.tiles = {}
 
     -- applies positive Y influence on anything affected
@@ -43,12 +43,14 @@ function Map:init()
 
     -- associate player with map
     self.player = Player(self)
+    self.flag = Flag(self)
     self.creep = Creep(self)
     self.creepr1 = Creepr1(self)
     self.creepr2 = Creepr2(self)
     self.creepr3 = Creepr3(self)
     self.creepr4 = Creepr4(self)
-    self.slime = Slime(self)
+    self.slime1 = Slime1(self)
+    self.boss = Boss(self)
     
 
 
@@ -275,12 +277,14 @@ end
 -- function to update camera offset with delta time
 function Map:update(dt)
     self.player:update(dt)
+    self.flag:update(dt)
     self.creep:update(dt)
     self.creepr1:update(dt)
     self.creepr2:update(dt)
     self.creepr3:update(dt)
     self.creepr4:update(dt)
-    self.slime:update(dt)
+    self.slime1:update(dt)
+    self.boss:update(dt)
     
     
     -- keep camera's X coordinate following the player, preventing camera from
@@ -340,13 +344,15 @@ function Map:render()
         end
     end
     
-   
+    self.flag:render()
     self.player:render()
+    
     self.creep:render()
     self.creepr1:render()
     self.creepr2:render()
     self.creepr3:render()
     self.creepr4:render()
-    self.slime:render()
+    self.slime1:render()
+    self.boss:render()
     
 end

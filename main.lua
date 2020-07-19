@@ -13,12 +13,14 @@ require 'Animation'
 
 require 'Map'
 require 'Player'
+require 'Flag'
 require 'Creep'
 require 'Creepr1'
 require 'Creepr2'
 require 'Creepr3'
 require 'Creepr4'
-require 'Slime'
+require 'Slime1'
+require 'Boss'
 
 
 -- close resolution to NES but 16:9
